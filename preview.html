@@ -1,0 +1,1233 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#080b0d">
+<title>DualFrame | Record Once. Publish Everywhere.</title>
+
+<style>
+:root {
+  --accent: #35dfcf;
+  --dark: #080b0d;
+  --panel: rgba(15, 20, 24, .82);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: var(--dark);
+  color: white;
+  font-family: Inter, system-ui, Arial, sans-serif;
+}
+
+body {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* MAIN CAMERA INTERFACE */
+
+.app {
+  width: min(100vw, 440px);
+  height: 100dvh;
+  position: relative;
+  overflow: hidden;
+  background: #172124;
+}
+
+/* Invisible source camera */
+
+#video {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* MAIN PORTRAIT COMPOSITION */
+
+#portraitCanvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  background: #24383c;
+}
+
+/* Dark gradient overlay */
+
+.scrim {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(
+      to bottom,
+      rgba(0,0,0,.48),
+      transparent 23%,
+      transparent 72%,
+      rgba(0,0,0,.48)
+    );
+}
+
+/* Composition guides */
+
+.guides {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.guides::before {
+  content: "";
+  position: absolute;
+  left: 31%;
+  right: 31%;
+  top: 0;
+  bottom: 0;
+  border-left: 1px solid rgba(255,255,255,.35);
+  border-right: 1px solid rgba(255,255,255,.35);
+}
+
+.guides::after {
+  content: "";
+  position: absolute;
+  top: 35%;
+  bottom: 29%;
+  left: 0;
+  right: 0;
+  border-top: 1px solid rgba(255,255,255,.2);
+  border-bottom: 1px solid rgba(255,255,255,.2);
+}
+
+/* BRAND */
+
+.brand {
+  position: absolute;
+  top: 18px;
+  left: 17px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .16em;
+  color: rgba(255,255,255,.8);
+}
+
+/* TOP BUTTONS */
+
+.top-buttons {
+  position: absolute;
+  right: 15px;
+  top: 14px;
+  display: flex;
+  gap: 8px;
+}
+
+.top-buttons button,
+.round-button {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  color: white;
+  background: rgba(10,15,18,.55);
+  border: 1px solid rgba(255,255,255,.35);
+  backdrop-filter: blur(12px);
+  cursor: pointer;
+  font-size: 16px;
+}
+
+/* RECORDING HUD */
+
+.hud {
+  position: absolute;
+  top: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 220px;
+  padding: 7px 10px;
+  text-align: center;
+  border: 1px solid rgba(255,255,255,.15);
+  border-radius: 6px;
+  background: rgba(12,18,22,.75);
+  backdrop-filter: blur(14px);
+}
+
+.scene-name {
+  font-size: 10px;
+  color: #d3dadd;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.timer {
+  font-family: monospace;
+  font-weight: bold;
+  font-size: 23px;
+  color: var(--accent);
+  letter-spacing: .08em;
+}
+
+.audio-meter {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 95px;
+  height: 16px;
+  margin: 3px auto 0;
+  padding: 3px 5px;
+  border: 1px solid #ffffff33;
+  border-radius: 5px;
+  background: #101719;
+}
+
+.audio-meter span {
+  font-size: 10px;
+}
+
+.meter-track {
+  flex: 1;
+  height: 6px;
+  overflow: hidden;
+  background: #394346;
+  border-radius: 5px;
+}
+
+.meter-fill {
+  width: 0;
+  height: 100%;
+  background: #32cf69;
+}
+
+/* LANDSCAPE FLOATING PREVIEW */
+
+.landscape-window {
+  position: absolute;
+  left: 50%;
+  bottom: 112px;
+  transform: translateX(-50%);
+  width: min(67%, 270px);
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,.65);
+  box-shadow: 0 8px 28px rgba(0,0,0,.6);
+  background: #111;
+}
+
+#landscapeCanvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.inset-icon {
+  position: absolute;
+  right: 7px;
+  bottom: 7px;
+  width: 18px;
+  height: 18px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: #ffffffc9;
+  color: #111;
+  font-size: 10px;
+}
+
+/* BOTTOM CONTROLS */
+
+.bottom-controls {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 0 25px max(20px, env(safe-area-inset-bottom));
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+}
+
+.side-control {
+  width: 60px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 7px;
+  padding-bottom: 10px;
+}
+
+.side-control small {
+  font-size: 9px;
+  color: var(--accent);
+  letter-spacing: .12em;
+}
+
+.record-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 7px;
+}
+
+.record-button {
+  width: 68px;
+  height: 68px;
+  border-radius: 50%;
+  border: 2px solid rgba(255,255,255,.8);
+  background: rgba(10,15,18,.55);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+
+.record-dot {
+  width: 27px;
+  height: 27px;
+  background: #e43b35;
+  border-radius: 50%;
+  transition: .15s;
+}
+
+.record-button.recording .record-dot {
+  width: 22px;
+  height: 22px;
+  border-radius: 5px;
+}
+
+.record-container small {
+  font-size: 9px;
+  letter-spacing: .15em;
+  text-transform: uppercase;
+}
+
+/* STATUS */
+
+.status {
+  position: absolute;
+  top: 120px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 6px 11px;
+  border-radius: 20px;
+  background: rgba(10,15,18,.8);
+  font-size: 10px;
+  opacity: 0;
+  transition: .2s;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.status.show {
+  opacity: 1;
+}
+
+/* SETTINGS PANEL */
+
+.panel {
+  position: absolute;
+  z-index: 10;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 20px;
+  background: rgba(13,19,22,.97);
+  border-top: 1px solid #ffffff28;
+  border-radius: 20px 20px 0 0;
+  transform: translateY(110%);
+  transition: .25s;
+}
+
+.panel.open {
+  transform: translateY(0);
+}
+
+.panel h2 {
+  font-size: 16px;
+  margin: 0 0 15px;
+}
+
+.panel label {
+  display: block;
+  margin: 12px 0;
+  color: #aab5b8;
+  font-size: 11px;
+}
+
+.panel select,
+.panel input {
+  width: 100%;
+  display: block;
+  margin-top: 6px;
+  padding: 11px;
+  border: 1px solid #ffffff25;
+  border-radius: 8px;
+  background: #202a2e;
+  color: white;
+}
+
+.panel button,
+.library button {
+  float: right;
+  border: 0;
+  background: transparent;
+  color: var(--accent);
+  cursor: pointer;
+}
+
+/* RECORDINGS LIBRARY */
+
+.library {
+  position: absolute;
+  z-index: 20;
+  inset: 0;
+  display: none;
+  overflow: auto;
+  padding: 22px 17px;
+  background: #0b1012;
+}
+
+.library.open {
+  display: block;
+}
+
+.library h2 {
+  font-size: 18px;
+}
+
+.file-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 10px 0;
+  padding: 13px;
+  border: 1px solid #ffffff25;
+  border-radius: 10px;
+}
+
+.file-item strong {
+  display: block;
+  font-size: 11px;
+}
+
+.file-item small {
+  font-size: 10px;
+  color: #aab5b8;
+}
+
+.file-item a {
+  padding: 9px 11px;
+  background: var(--accent);
+  color: #071210;
+  border-radius: 7px;
+  text-decoration: none;
+  font-size: 10px;
+  font-weight: bold;
+  white-space: nowrap;
+}
+
+.note {
+  color: #aab5b8;
+  font-size: 10px;
+  line-height: 1.6;
+}
+</style>
+</head>
+
+<body>
+
+<main class="app">
+
+  <video id="video" autoplay muted playsinline></video>
+
+  <!-- MAIN PORTRAIT FRAME -->
+  <canvas id="portraitCanvas"></canvas>
+
+  <div class="scrim"></div>
+  <div class="guides"></div>
+
+  <div class="brand">DUALFRAME</div>
+
+  <!-- TOP BUTTONS -->
+  <div class="top-buttons">
+    <button id="flipButton" title="Switch camera">↻</button>
+    <button id="settingsButton" title="Settings">⚙</button>
+  </div>
+
+  <!-- RECORDING INFORMATION -->
+  <div class="hud">
+    <div class="scene-name" id="sceneName">
+      Vlog / New Take / Take 001
+    </div>
+
+    <div class="timer" id="timer">00:00</div>
+
+    <div class="audio-meter">
+      <span>◖))</span>
+      <div class="meter-track">
+        <div class="meter-fill" id="meterFill"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- LANDSCAPE FRAME OVERLAY -->
+  <div class="landscape-window">
+    <canvas id="landscapeCanvas"></canvas>
+    <span class="inset-icon">↗</span>
+  </div>
+
+  <div class="status" id="status"></div>
+
+  <!-- BOTTOM CONTROLS -->
+  <div class="bottom-controls">
+
+    <div class="side-control">
+      <button class="round-button" id="libraryButton">▤</button>
+      <small>TAKES</small>
+    </div>
+
+    <div class="record-container">
+      <button class="record-button" id="recordButton">
+        <span class="record-dot"></span>
+      </button>
+      <small id="recordText">RECORD</small>
+    </div>
+
+    <div class="side-control">
+      <button class="round-button" id="settingsButton2">⌁</button>
+      <small>1×</small>
+    </div>
+
+  </div>
+
+  <!-- SETTINGS -->
+  <section class="panel" id="settingsPanel">
+
+    <h2>
+      Capture Settings
+      <button id="closeSettings">Done</button>
+    </h2>
+
+    <label>
+      Video Quality
+      <select id="quality">
+        <option value="720">720p</option>
+        <option value="1080" selected>1080p</option>
+      </select>
+    </label>
+
+    <label>
+      Frame Rate
+      <select id="fps">
+        <option value="24">24 FPS</option>
+        <option value="30" selected>30 FPS</option>
+      </select>
+    </label>
+
+    <label>
+      Camera
+      <select id="cameraSelect">
+        <option value="">Default Camera</option>
+      </select>
+    </label>
+
+    <label>
+      Project Name
+      <input id="projectName" value="Vlog / New Take">
+    </label>
+
+    <p class="note">
+      Both frames are generated from one camera feed.
+      Portrait and landscape videos are recorded simultaneously.
+    </p>
+
+  </section>
+
+  <!-- OUTPUT LIBRARY -->
+  <section class="library" id="library">
+
+    <button id="closeLibrary">Close</button>
+
+    <h2>Your Recordings</h2>
+
+    <p class="note">
+      Download your portrait and landscape videos below.
+    </p>
+
+    <div id="fileList">
+      <p class="note">No recordings yet.</p>
+    </div>
+
+    <p class="note">
+      Exports are WebM. Download your recordings before closing
+      or refreshing the browser.
+    </p>
+
+  </section>
+
+</main>
+
+<script>
+(() => {
+
+const $ = id => document.getElementById(id);
+
+const video = $("video");
+const portrait = $("portraitCanvas");
+const landscape = $("landscapeCanvas");
+
+const portraitCtx = portrait.getContext("2d");
+const landscapeCtx = landscape.getContext("2d");
+
+let cameraStream = null;
+let animationFrame = null;
+let isFrontCamera = false;
+let isRecording = false;
+let recorders = [];
+let savedFiles = [];
+let takeNumber = 1;
+let recordingStart = 0;
+let timerInterval = null;
+let audioContext = null;
+let analyser = null;
+let meterFrame = null;
+
+/* STATUS MESSAGE */
+
+function showStatus(message) {
+  const status = $("status");
+  status.textContent = message;
+  status.classList.add("show");
+
+  clearTimeout(showStatus.timeout);
+
+  showStatus.timeout = setTimeout(() => {
+    status.classList.remove("show");
+  }, 2500);
+}
+
+/* CANVAS RESOLUTION */
+
+function updateCanvasSizes() {
+
+  const width = $("quality").value === "1080" ? 1080 : 720;
+
+  portrait.width = width;
+  portrait.height = Math.round(width * 16 / 9);
+
+  landscape.width = portrait.height;
+  landscape.height = portrait.width;
+
+}
+
+/* CROP CAMERA IMAGE TO THE REQUESTED RATIO */
+
+function drawCrop(ctx, canvas, targetRatio) {
+
+  if (!video.videoWidth || !video.videoHeight) return;
+
+  const sourceWidth = video.videoWidth;
+  const sourceHeight = video.videoHeight;
+
+  const sourceRatio = sourceWidth / sourceHeight;
+
+  let sx = 0;
+  let sy = 0;
+  let sw = sourceWidth;
+  let sh = sourceHeight;
+
+  if (sourceRatio > targetRatio) {
+
+    sw = sourceHeight * targetRatio;
+    sx = (sourceWidth - sw) / 2;
+
+  } else {
+
+    sh = sourceWidth / targetRatio;
+    sy = (sourceHeight - sh) / 2;
+
+  }
+
+  ctx.drawImage(
+    video,
+    sx, sy, sw, sh,
+    0, 0, canvas.width, canvas.height
+  );
+
+}
+
+/* RENDER BOTH COMPOSITIONS CONTINUOUSLY */
+
+function renderFrames() {
+
+  if (video.readyState >= 2) {
+
+    drawCrop(portraitCtx, portrait, 9 / 16);
+    drawCrop(landscapeCtx, landscape, 16 / 9);
+
+  }
+
+  animationFrame = requestAnimationFrame(renderFrames);
+
+}
+
+/* CAMERA DEVICE LIST */
+
+async function loadCameras() {
+
+  const devices = await navigator.mediaDevices.enumerateDevices();
+
+  const select = $("cameraSelect");
+  const previous = select.value;
+
+  select.innerHTML = '<option value="">Default Camera</option>';
+
+  devices
+    .filter(device => device.kind === "videoinput")
+    .forEach((device, index) => {
+
+      const option = document.createElement("option");
+
+      option.value = device.deviceId;
+      option.textContent = device.label || `Camera ${index + 1}`;
+
+      select.appendChild(option);
+
+    });
+
+  if ([...select.options].some(option => option.value === previous)) {
+    select.value = previous;
+  }
+
+}
+
+/* START CAMERA */
+
+async function startCamera(deviceId = "") {
+
+  try {
+
+    if (cameraStream) {
+      cameraStream.getTracks().forEach(track => track.stop());
+    }
+
+    const width = $("quality").value === "1080" ? 1920 : 1280;
+
+    cameraStream = await navigator.mediaDevices.getUserMedia({
+
+      audio: true,
+
+      video: {
+
+        width: { ideal: width },
+
+        height: { ideal: Math.round(width * 9 / 16) },
+
+        frameRate: { ideal: Number($("fps").value) },
+
+        facingMode: deviceId
+          ? undefined
+          : (isFrontCamera ? "user" : "environment"),
+
+        deviceId: deviceId
+          ? { exact: deviceId }
+          : undefined
+
+      }
+
+    });
+
+    video.srcObject = cameraStream;
+
+    await video.play();
+
+    updateCanvasSizes();
+
+    cancelAnimationFrame(animationFrame);
+
+    renderFrames();
+
+    await loadCameras();
+
+    showStatus("Camera ready");
+
+  } catch (error) {
+
+    console.error(error);
+
+    showStatus("Camera unavailable. Check permissions.");
+
+  }
+
+}
+
+/* TIMER */
+
+function formatTime(milliseconds) {
+
+  const seconds = Math.floor(milliseconds / 1000);
+
+  const minutes = Math.floor(seconds / 60);
+
+  return (
+    String(minutes).padStart(2, "0") +
+    ":" +
+    String(seconds % 60).padStart(2, "0")
+  );
+
+}
+
+/* AUDIO LEVEL INDICATOR */
+
+function startAudioMeter() {
+
+  try {
+
+    audioContext = new (
+      window.AudioContext || window.webkitAudioContext
+    )();
+
+    analyser = audioContext.createAnalyser();
+
+    analyser.fftSize = 256;
+
+    const source = audioContext.createMediaStreamSource(cameraStream);
+
+    source.connect(analyser);
+
+    const data = new Uint8Array(analyser.frequencyBinCount);
+
+    function updateMeter() {
+
+      analyser.getByteTimeDomainData(data);
+
+      let sum = 0;
+
+      for (const value of data) {
+        sum += (value - 128) ** 2;
+      }
+
+      const rms = Math.sqrt(sum / data.length);
+
+      $("meterFill").style.width =
+        Math.min(100, Math.max(2, rms * 1.8)) + "%";
+
+      meterFrame = requestAnimationFrame(updateMeter);
+
+    }
+
+    updateMeter();
+
+  } catch (error) {
+
+    console.warn("Audio meter unavailable", error);
+
+  }
+
+}
+
+function stopAudioMeter() {
+
+  cancelAnimationFrame(meterFrame);
+
+  $("meterFill").style.width = "0%";
+
+  if (audioContext) {
+    audioContext.close();
+    audioContext = null;
+  }
+
+}
+
+/* CREATE A RECORDER FOR EACH COMPOSITION */
+
+function createRecorder(canvas, label) {
+
+  const canvasStream = canvas.captureStream(
+    Number($("fps").value)
+  );
+
+  // Clone the same microphone audio track into each output.
+
+  cameraStream.getAudioTracks().forEach(track => {
+
+    canvasStream.addTrack(track.clone());
+
+  });
+
+  const supportedMime = [
+
+    "video/webm;codecs=vp9,opus",
+
+    "video/webm;codecs=vp8,opus",
+
+    "video/webm"
+
+  ].find(type => MediaRecorder.isTypeSupported(type));
+
+  const recorder = new MediaRecorder(
+
+    canvasStream,
+
+    supportedMime ? { mimeType: supportedMime } : undefined
+
+  );
+
+  const chunks = [];
+
+  recorder.ondataavailable = event => {
+
+    if (event.data && event.data.size > 0) {
+      chunks.push(event.data);
+    }
+
+  };
+
+  recorder.onstop = () => {
+
+    const blob = new Blob(chunks, {
+      type: recorder.mimeType || "video/webm"
+    });
+
+    const url = URL.createObjectURL(blob);
+
+    savedFiles.push({
+      label,
+      blob,
+      url
+    });
+
+    renderFiles();
+
+    canvasStream.getTracks().forEach(track => track.stop());
+
+  };
+
+  recorder.onerror = event => {
+
+    console.error("Recorder error", event);
+
+    showStatus("Recording error");
+
+  };
+
+  return recorder;
+
+}
+
+/* DISPLAY DOWNLOADABLE FILES */
+
+function renderFiles() {
+
+  const container = $("fileList");
+
+  container.innerHTML = "";
+
+  if (!savedFiles.length) {
+
+    container.innerHTML =
+      '<p class="note">No recordings yet.</p>';
+
+    return;
+
+  }
+
+  savedFiles.slice().reverse().forEach(file => {
+
+    const row = document.createElement("div");
+
+    row.className = "file-item";
+
+    const info = document.createElement("div");
+
+    const title = document.createElement("strong");
+
+    title.textContent = file.label;
+
+    const details = document.createElement("small");
+
+    details.textContent =
+      (file.blob.size / 1048576).toFixed(1) + " MB · WebM";
+
+    const link = document.createElement("a");
+
+    link.href = file.url;
+
+    link.download =
+      "dualframe-" +
+      file.label.toLowerCase().replace(/[^a-z0-9]+/g, "-") +
+      ".webm";
+
+    link.textContent = "Download";
+
+    info.append(title, details);
+
+    row.append(info, link);
+
+    container.append(row);
+
+  });
+
+}
+
+/* START BOTH RECORDINGS */
+
+function startRecording() {
+
+  if (!cameraStream || !video.videoWidth) {
+
+    showStatus("Camera is not ready");
+
+    return;
+
+  }
+
+  if (
+    !window.MediaRecorder ||
+    !HTMLCanvasElement.prototype.captureStream
+  ) {
+
+    showStatus("Recording is not supported in this browser");
+
+    return;
+
+  }
+
+  const projectName =
+    $("projectName").value.trim() || "DualFrame";
+
+  const label =
+    `${projectName} · Take ${String(takeNumber).padStart(3, "0")}`;
+
+  try {
+
+    // Both recorders use the two live canvas outputs.
+
+    recorders = [
+
+      createRecorder(
+        portrait,
+        `Portrait 9:16 · ${label}`
+      ),
+
+      createRecorder(
+        landscape,
+        `Landscape 16:9 · ${label}`
+      )
+
+    ];
+
+    recorders.forEach(recorder => recorder.start(500));
+
+    isRecording = true;
+
+    recordingStart = Date.now();
+
+    $("recordButton").classList.add("recording");
+
+    $("recordText").textContent = "STOP";
+
+    $("sceneName").textContent = label;
+
+    timerInterval = setInterval(() => {
+
+      $("timer").textContent =
+        formatTime(Date.now() - recordingStart);
+
+    }, 200);
+
+    startAudioMeter();
+
+    showStatus("Recording both frames");
+
+  } catch (error) {
+
+    console.error(error);
+
+    recorders.forEach(recorder => {
+
+      if (recorder.state === "recording") {
+        recorder.stop();
+      }
+
+    });
+
+    isRecording = false;
+
+    showStatus("Could not start recording");
+
+  }
+
+}
+
+/* STOP BOTH RECORDINGS */
+
+function stopRecording() {
+
+  if (!isRecording) return;
+
+  isRecording = false;
+
+  clearInterval(timerInterval);
+
+  recorders.forEach(recorder => {
+
+    if (recorder.state === "recording") {
+      recorder.stop();
+    }
+
+  });
+
+  $("recordButton").classList.remove("recording");
+
+  $("recordText").textContent = "RECORD";
+
+  $("timer").textContent =
+    formatTime(Date.now() - recordingStart);
+
+  stopAudioMeter();
+
+  takeNumber++;
+
+  showStatus("Saving both videos");
+
+}
+
+/* RECORD BUTTON */
+
+$("recordButton").addEventListener("click", () => {
+
+  if (isRecording) {
+    stopRecording();
+  } else {
+    startRecording();
+  }
+
+});
+
+/* FRONT / BACK CAMERA SWITCH */
+
+$("flipButton").addEventListener("click", () => {
+
+  if (isRecording) {
+
+    showStatus("Stop recording before switching");
+
+    return;
+
+  }
+
+  isFrontCamera = !isFrontCamera;
+
+  $("cameraSelect").value = "";
+
+  startCamera();
+
+});
+
+/* CAMERA SELECTION */
+
+$("cameraSelect").addEventListener("change", event => {
+
+  if (isRecording) {
+
+    showStatus("Stop recording before changing camera");
+
+    return;
+
+  }
+
+  startCamera(event.target.value);
+
+});
+
+/* QUALITY AND FPS */
+
+$("quality").addEventListener("change", () => {
+
+  if (!isRecording) {
+    startCamera($("cameraSelect").value);
+  }
+
+});
+
+$("fps").addEventListener("change", () => {
+
+  if (!isRecording) {
+    startCamera($("cameraSelect").value);
+  }
+
+});
+
+/* SETTINGS PANEL */
+
+function openSettings() {
+
+  $("settingsPanel").classList.add("open");
+
+}
+
+$("settingsButton").addEventListener("click", openSettings);
+
+$("settingsButton2").addEventListener("click", openSettings);
+
+$("closeSettings").addEventListener("click", () => {
+
+  $("settingsPanel").classList.remove("open");
+
+});
+
+/* RECORDINGS LIBRARY */
+
+$("libraryButton").addEventListener("click", () => {
+
+  $("library").classList.add("open");
+
+});
+
+$("closeLibrary").addEventListener("click", () => {
+
+  $("library").classList.remove("open");
+
+});
+
+/* INITIALIZE */
+
+if (navigator.mediaDevices?.getUserMedia) {
+
+  startCamera();
+
+} else {
+
+  showStatus("Camera requires HTTPS or localhost");
+
+}
+
+/* CLEANUP */
+
+window.addEventListener("pagehide", () => {
+
+  if (cameraStream) {
+    cameraStream.getTracks().forEach(track => track.stop());
+  }
+
+  savedFiles.forEach(file => URL.revokeObjectURL(file.url));
+
+});
+
+})();
+</script>
+
+</body>
+</html>
